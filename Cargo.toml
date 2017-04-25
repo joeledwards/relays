@@ -1,0 +1,7 @@
+[package]
+name = "relays"
+version = "0.1.0"
+authors = ["joel"]
+
+[dependencies]
+sysfs_gpio = "0.4"
