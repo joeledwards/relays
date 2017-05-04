@@ -32,14 +32,14 @@ GND              39 -- 40  GPIO 21 / SCLK
 
 fn main() {
   let mut relays = HashMap::new();
-  relays.insert(1, 6);  //  6 - 29
-  relays.insert(2, 13); // 13 - 31
-  relays.insert(3, 19); // 19 - 33
-  relays.insert(4, 26);  // 26 - 35
-  relays.insert(5, 12);  // 12 - 32
-  relays.insert(6, 16); // 16 - 36
-  relays.insert(7, 20); // 20 - 38
-  relays.insert(8, 21); // 21 - 40
+  relays.insert(1, Pin::new(6));  //  6 - 29
+  relays.insert(2, Pin::new(13)); // 13 - 31
+  relays.insert(3, Pin::new(19)); // 19 - 33
+  relays.insert(4, Pin::new(26)); // 26 - 35
+  relays.insert(5, Pin::new(12)); // 12 - 32
+  relays.insert(6, Pin::new(16)); // 16 - 36
+  relays.insert(7, Pin::new(20)); // 20 - 38
+  relays.insert(8, Pin::new(21)); // 21 - 40
 
   // TODO: add control logic.
   
