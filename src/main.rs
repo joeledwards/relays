@@ -1,9 +1,13 @@
 extern crate sysfs_gpio;
 
-use sysfs_gpio::{Direction, Pin};
-use std::thread::sleep;
-use std::time::Duration;
 use std::collections::HashMap;
+use std::collections::LinkedList;
+use std::sync::mpsc::Receiver;
+use std::sync::mpsc::channel;
+use std::thread::sleep;
+use std::thread;
+use std::time::Duration;
+use sysfs_gpio::{Direction, Pin};
 
 /* List of pins
 
@@ -31,18 +35,77 @@ GND              39 -- 40  GPIO 21 / SCLK
 */
 
 fn main() {
-  let mut relays = HashMap::new();
-  relays.insert(1, Pin::new(6));  //  6 - 29
-  relays.insert(2, Pin::new(13)); // 13 - 31
-  relays.insert(3, Pin::new(19)); // 19 - 33
-  relays.insert(4, Pin::new(26)); // 26 - 35
-  relays.insert(5, Pin::new(12)); // 12 - 32
-  relays.insert(6, Pin::new(16)); // 16 - 36
-  relays.insert(7, Pin::new(20)); // 20 - 38
-  relays.insert(8, Pin::new(21)); // 21 - 40
+    let mut pins: LinkedList<u64> = LinkedList::new();
 
-  // TODO: add control logic.
+    pins.push_back(26); //  6 - 29
+    pins.push_back(19); // 13 - 31
+    pins.push_back(13); // 19 - 33
+    pins.push_back(6);  // 26 - 35
+    pins.push_back(21); // 12 - 32
+    pins.push_back(20); // 16 - 36
+    pins.push_back(16); // 20 - 38
+    pins.push_back(12); // 21 - 40
+
+    let mut pipes = LinkedList::new();
+
+    for pinNumber in pins {
+        let (tx, rx) = channel();
+        let pin = Pin::new(pinNumber);
+        pipes.push_back(tx);
+        thread::spawn(move || {
+            pinWorker(&pin, rx)
+        });
+    }
+
+    let mut state = true;
+
+    println!("=== Relays ===");
+
+    loop {
+        for pipe in &pipes {
+            sleep(Duration::from_millis(500));
+            pipe.send(state);
+        }
+
+        state = !state;
+    }
   
-  println!("=== Relays ===");
+    println!("=== End ===");
+}
+
+fn togglePin(pinNumber: u64) {
+  let pin = Pin::new(pinNumber);
+
+  pin.with_exported(|| {
+      sleep(Duration::from_millis(80));
+      try!(pin.set_direction(Direction::Low));
+
+      loop {
+          println!("Setting {} to 0", pinNumber);
+          pin.set_value(0).unwrap();
+          sleep(Duration::from_millis(1000));
+          println!("Setting {} to 1", pinNumber);
+          pin.set_value(1).unwrap();
+          sleep(Duration::from_millis(1000));
+      }
+  }).unwrap();
+}
+
+fn pinWorker(pin: &Pin, rx: Receiver<bool>) {
+    //println!("Pin {} worker started.", pin);
+
+    pin.with_exported(|| {
+        sleep(Duration::from_millis(80));
+        try!(pin.set_direction(Direction::Low));
+
+        loop {
+            let state = match rx.recv().unwrap() {
+                true => 1,
+                false => 0
+            };
+
+            pin.set_value(state).unwrap();
+        }
+    }).unwrap();
 }
 
